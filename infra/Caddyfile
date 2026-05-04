@@ -1,0 +1,16 @@
+# Dev Caddyfile — single host on :80, routes /api/* to backend, everything else to Vite dev server.
+# Production override lives in docker-compose.prod.yml.
+
+:80 {
+	encode zstd gzip
+
+	@api path /api/* /healthz
+	handle @api {
+		reverse_proxy backend:8000
+	}
+
+	# Vite HMR uses websockets on /; reverse_proxy handles upgrades automatically.
+	handle {
+		reverse_proxy frontend:5173
+	}
+}
