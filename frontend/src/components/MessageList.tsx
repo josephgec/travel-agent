@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronRight, Loader2, Wrench } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { D_DISPLAY, D_MONO, D_PAL, D_SCRIPT, D_SERIF } from "../design/postcard/tokens";
 import { useChat } from "../store/chat";
 import {
   CalendarEventCreatedCard,
@@ -12,7 +13,8 @@ import { DirectionsCard, type DirectionsResult } from "./DirectionsCard";
 import { FlightOffersCard, type FlightOffersResult } from "./FlightOffersCard";
 import { HotelOffersCard, type HotelOffersResult } from "./HotelOffersCard";
 import { PlacesCard, type PlacesResult } from "./PlacesCard";
-import { PlanCard, type PlanResult } from "./PlanCard";
+// Plans are hoisted into the right-side LivePlanPanel by ChatPage instead of
+// rendering inline. We don't import PlanCard here.
 
 const SUGGESTED_PROMPTS = [
   "Plan a long weekend in Mexico City — foodie focus, ~$1500",
@@ -27,29 +29,64 @@ export function MessageList() {
   const status = useChat((s) => s.status);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Stick to bottom on new messages or status changes.
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, status]);
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 overflow-y-auto px-6 py-12 flex flex-col items-center justify-center">
-        <div className="max-w-xl w-full space-y-4">
-          <div className="text-center text-neutral-300">
-            <h2 className="text-lg font-medium">What can I help you plan?</h2>
-            <p className="text-sm text-neutral-500 mt-1">
-              Try one of these — or type anything in the box below.
-            </p>
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          background: D_PAL.cream,
+          backgroundImage: `radial-gradient(rgba(120,90,40,.06) 1px, transparent 1px)`,
+          backgroundSize: "20px 20px",
+          padding: "48px 24px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ maxWidth: 620, width: "100%" }}>
+          <div style={{ textAlign: "center", marginBottom: 18 }}>
+            <div style={{ fontFamily: D_SCRIPT, fontSize: 22, color: D_PAL.accent, transform: "rotate(-1.5deg)", display: "inline-block" }}>
+              start somewhere —
+            </div>
+            <div style={{ fontFamily: D_DISPLAY, fontSize: 26, fontWeight: 600, letterSpacing: -0.6, marginTop: 4 }}>
+              What can I help you plan?
+            </div>
+            <div style={{ fontFamily: D_SERIF, fontStyle: "italic", fontSize: 14, color: D_PAL.ink3, marginTop: 6 }}>
+              Pick one of these prompts to begin, or write your own below.
+            </div>
           </div>
-          <ul className="space-y-2">
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
             {SUGGESTED_PROMPTS.map((p) => (
               <li key={p}>
                 <button
                   type="button"
                   onClick={() => prefillInput(p)}
-                  className="w-full text-left rounded-md border border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900 px-3 py-2 text-sm text-neutral-300"
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    background: D_PAL.paper,
+                    border: `0.5px solid ${D_PAL.rule}`,
+                    boxShadow: `2px 2px 0 ${D_PAL.ruleSoft}`,
+                    padding: "10px 14px",
+                    fontFamily: D_SERIF,
+                    fontSize: 14,
+                    color: D_PAL.ink2,
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = D_PAL.accent;
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = D_PAL.rule;
+                  }}
                 >
+                  <span style={{ fontFamily: D_SCRIPT, fontSize: 15, color: D_PAL.accent, marginRight: 6 }}>try —</span>
                   {p}
                 </button>
               </li>
@@ -61,47 +98,95 @@ export function MessageList() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-      {messages.map((m) => {
-        if (m.kind === "user") {
-          return (
-            <div key={m.id} className="flex justify-end">
-              <div className="max-w-[80%] rounded-lg bg-neutral-100 text-neutral-900 px-4 py-2 whitespace-pre-wrap">
-                {m.text}
+    <div
+      style={{
+        flex: 1,
+        overflowY: "auto",
+        background: D_PAL.cream,
+        backgroundImage: `radial-gradient(rgba(120,90,40,.06) 1px, transparent 1px)`,
+        backgroundSize: "20px 20px",
+        padding: "20px 28px",
+      }}
+    >
+      <div style={{ maxWidth: 980, margin: "0 auto", display: "flex", flexDirection: "column", gap: 14 }}>
+        {messages.map((m) => {
+          if (m.kind === "user") {
+            return (
+              <div key={m.id} style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div
+                  style={{
+                    maxWidth: "78%",
+                    background: D_PAL.ink,
+                    color: D_PAL.cream,
+                    padding: "10px 14px",
+                    fontFamily: D_SERIF,
+                    fontSize: 14.5,
+                    lineHeight: 1.55,
+                    whiteSpace: "pre-wrap",
+                    boxShadow: `2px 2px 0 ${D_PAL.ruleSoft}`,
+                  }}
+                >
+                  {m.text}
+                </div>
               </div>
-            </div>
-          );
-        }
-        if (m.kind === "assistant") {
-          return (
-            <div key={m.id} className="flex justify-start">
-              <div className="max-w-[80%] text-neutral-100 prose prose-invert prose-sm">
-                <ReactMarkdown>{m.text || (m.streaming ? "…" : "")}</ReactMarkdown>
+            );
+          }
+          if (m.kind === "assistant") {
+            return (
+              <div key={m.id} style={{ display: "flex", justifyContent: "flex-start" }}>
+                <div
+                  style={{
+                    maxWidth: "82%",
+                    background: D_PAL.paper,
+                    border: `0.5px solid ${D_PAL.rule}`,
+                    boxShadow: `2px 2px 0 ${D_PAL.ruleSoft}`,
+                    padding: "12px 16px",
+                  }}
+                >
+                  <div style={{ fontFamily: D_SCRIPT, fontSize: 14, color: D_PAL.accent, marginBottom: 4 }}>
+                    W. — {m.streaming ? "writing…" : ""}
+                  </div>
+                  <div className="postcard-prose">
+                    <ReactMarkdown>{m.text || (m.streaming ? "…" : "")}</ReactMarkdown>
+                  </div>
+                </div>
               </div>
-            </div>
-          );
-        }
-        return <ToolCard key={m.id} msg={m} />;
-      })}
-      {status.kind !== "idle" && (
-        <div className="flex items-center gap-2 text-xs text-neutral-500">
-          <Loader2 size={12} className="animate-spin" />
-          {status.kind === "thinking" ? (
-            <span>Thinking…</span>
-          ) : (
-            <span>
-              Calling <span className="font-mono text-neutral-300">{status.toolName}</span>…
-            </span>
-          )}
-        </div>
-      )}
-      <div ref={bottomRef} />
+            );
+          }
+          return <ToolCard key={m.id} msg={m} />;
+        })}
+        {status.kind !== "idle" && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 12px",
+              border: `0.5px dashed ${D_PAL.rule}`,
+              background: D_PAL.paperWarm,
+              alignSelf: "flex-start",
+              fontFamily: D_MONO,
+              fontSize: 11,
+              color: D_PAL.ink3,
+              letterSpacing: 0.5,
+            }}
+          >
+            <Loader2 size={12} className="animate-spin" />
+            {status.kind === "thinking" ? (
+              <span>thinking…</span>
+            ) : (
+              <span>
+                calling <span style={{ color: D_PAL.accent }}>{status.toolName}</span>…
+              </span>
+            )}
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
     </div>
   );
 }
 
-// Briefly fills the input textarea via a custom event the input listens for.
-// Avoids a tighter coupling between MessageList and MessageInput.
 function prefillInput(text: string) {
   window.dispatchEvent(new CustomEvent("chat:prefill", { detail: text }));
 }
@@ -122,32 +207,82 @@ function ToolCard({
   const isRich = !msg.pending && !msg.result?.error && hint !== undefined;
 
   return (
-    <div className="space-y-2">
-      <div className="rounded-md border border-neutral-800 bg-neutral-900/40 text-xs">
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div
+        style={{
+          background: D_PAL.paperWarm,
+          border: `0.5px solid ${D_PAL.rule}`,
+          boxShadow: `2px 2px 0 ${D_PAL.ruleSoft}`,
+        }}
+      >
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="w-full flex items-center gap-2 px-3 py-2 text-neutral-300 hover:bg-neutral-900"
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 12px",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            color: D_PAL.ink2,
+          }}
         >
           {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          <Wrench size={14} className="text-amber-400" />
-          <span className="font-mono">{msg.name}</span>
-          <span className="ml-auto text-neutral-500">
+          <Wrench size={13} style={{ color: D_PAL.accent }} />
+          <span style={{ fontFamily: D_MONO, fontSize: 11, color: D_PAL.ink2, letterSpacing: 0.5 }}>{msg.name}</span>
+          <span
+            style={{
+              marginLeft: "auto",
+              fontFamily: D_SCRIPT,
+              fontSize: 13,
+              color: msg.pending ? D_PAL.muted : msg.result?.error ? "#a23a28" : D_PAL.green,
+            }}
+          >
             {msg.pending ? "running…" : msg.result?.error ? "error" : "done"}
           </span>
         </button>
         {open && (
-          <div className="px-3 pb-3 space-y-2 font-mono">
+          <div style={{ padding: "0 12px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
             <div>
-              <div className="text-neutral-500 mb-1">arguments</div>
-              <pre className="bg-neutral-950 rounded p-2 overflow-x-auto">
+              <div style={{ fontFamily: D_MONO, fontSize: 9, color: D_PAL.muted, letterSpacing: 1, marginBottom: 4 }}>
+                ARGUMENTS
+              </div>
+              <pre
+                style={{
+                  background: D_PAL.paperHi,
+                  border: `0.5px solid ${D_PAL.ruleSoft}`,
+                  padding: 8,
+                  margin: 0,
+                  fontFamily: D_MONO,
+                  fontSize: 11,
+                  color: D_PAL.ink2,
+                  overflowX: "auto",
+                }}
+              >
                 {JSON.stringify(msg.args, null, 2)}
               </pre>
             </div>
             {msg.result && (
               <div>
-                <div className="text-neutral-500 mb-1">result</div>
-                <pre className="bg-neutral-950 rounded p-2 overflow-x-auto max-h-64">
+                <div style={{ fontFamily: D_MONO, fontSize: 9, color: D_PAL.muted, letterSpacing: 1, marginBottom: 4 }}>
+                  RESULT
+                </div>
+                <pre
+                  style={{
+                    background: D_PAL.paperHi,
+                    border: `0.5px solid ${D_PAL.ruleSoft}`,
+                    padding: 8,
+                    margin: 0,
+                    fontFamily: D_MONO,
+                    fontSize: 11,
+                    color: D_PAL.ink2,
+                    overflowX: "auto",
+                    maxHeight: 240,
+                  }}
+                >
                   {JSON.stringify(msg.result, null, 2)}
                 </pre>
               </div>
@@ -175,9 +310,7 @@ function ToolCard({
           result={msg.result as unknown as CalendarEventCreatedResult}
         />
       )}
-      {isRich && hint === "plan" && (
-        <PlanCard result={msg.result as unknown as PlanResult} />
-      )}
+      {/* hint === "plan" intentionally not rendered inline — see LivePlanPanel */}
     </div>
   );
 }

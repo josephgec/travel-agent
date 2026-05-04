@@ -1,5 +1,6 @@
 import { Bike, Bus, Car, CornerDownRight, Footprints } from "lucide-react";
 import type { ReactNode } from "react";
+import { D_MONO, D_PAL, D_SCRIPT, D_SERIF } from "../design/postcard/tokens";
 
 type Step = {
   instruction: string | null;
@@ -12,7 +13,7 @@ type Step = {
 export type DirectionsResult = {
   display_hint: "directions";
   mode: string;
-  duration: string | null; // ISO 8601, e.g. "1234s"
+  duration: string | null;
   distance_meters: number | null;
   polyline: string | null;
   steps: Step[];
@@ -30,24 +31,45 @@ export function DirectionsCard({ result }: { result: DirectionsResult }) {
   const { mode, duration, distance_meters, steps } = result;
 
   return (
-    <div className="rounded-md border border-neutral-800 bg-neutral-900/40 text-sm">
-      <div className="px-4 py-2 border-b border-neutral-800 text-neutral-300 text-xs flex items-center gap-3">
-        <span className="flex items-center gap-1">
-          {MODE_ICONS[mode] ?? <Car size={14} />}
-          {mode.toLowerCase()}
+    <div style={{ background: D_PAL.paper, border: `0.5px solid ${D_PAL.rule}`, boxShadow: `3px 3px 0 ${D_PAL.ruleSoft}` }}>
+      <div
+        style={{
+          padding: "10px 14px",
+          borderBottom: `0.5px dashed ${D_PAL.rule}`,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          background: D_PAL.paperWarm,
+        }}
+      >
+        <span style={{ color: D_PAL.accent }}>{MODE_ICONS[mode] ?? <Car size={14} />}</span>
+        <span style={{ fontFamily: D_SCRIPT, fontSize: 14, color: D_PAL.accent }}>directions —</span>
+        <span style={{ fontFamily: D_MONO, fontSize: 11, color: D_PAL.ink2, letterSpacing: 0.5 }}>
+          {mode.toLowerCase()} · {fmtDuration(duration)} · {fmtDistance(distance_meters)}
         </span>
-        <span>· {fmtDuration(duration)}</span>
-        <span>· {fmtDistance(distance_meters)}</span>
-        <span className="ml-auto text-neutral-500">{steps.length} steps</span>
+        <span style={{ marginLeft: "auto", fontFamily: D_MONO, fontSize: 9.5, color: D_PAL.muted, letterSpacing: 1 }}>
+          {steps.length} STEPS
+        </span>
       </div>
       {steps.length > 0 ? (
-        <ol className="divide-y divide-neutral-800">
+        <ol style={{ listStyle: "none", padding: 0, margin: 0 }}>
           {steps.map((s, i) => (
-            <li key={i} className="px-4 py-2 flex items-start gap-3 text-xs">
-              <CornerDownRight size={14} className="text-neutral-500 mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <div className="text-neutral-200">{s.instruction ?? "—"}</div>
-                <div className="text-neutral-500 mt-0.5">
+            <li
+              key={i}
+              style={{
+                padding: "8px 14px",
+                borderBottom: i < steps.length - 1 ? `0.5px dotted ${D_PAL.ruleSoft}` : "none",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 10,
+              }}
+            >
+              <CornerDownRight size={12} style={{ color: D_PAL.muted, marginTop: 4 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: D_SERIF, fontSize: 13, color: D_PAL.ink2, lineHeight: 1.5 }}>
+                  {s.instruction ?? "—"}
+                </div>
+                <div style={{ fontFamily: D_MONO, fontSize: 9.5, color: D_PAL.muted, letterSpacing: 0.5, marginTop: 2 }}>
                   {fmtDistance(s.distance_meters)} · {fmtDuration(s.duration)}
                 </div>
               </div>
@@ -55,13 +77,14 @@ export function DirectionsCard({ result }: { result: DirectionsResult }) {
           ))}
         </ol>
       ) : (
-        <div className="px-4 py-6 text-center text-neutral-500 text-xs">No route found.</div>
+        <div style={{ padding: "20px 16px", textAlign: "center", fontFamily: D_SERIF, fontStyle: "italic", color: D_PAL.muted }}>
+          No route found.
+        </div>
       )}
     </div>
   );
 }
 
-// "1234s" -> "20m 34s" or "2h 5m"
 function fmtDuration(d: string | null): string {
   if (!d) return "—";
   const m = /^(\d+)s$/.exec(d);
@@ -81,3 +104,4 @@ function fmtDistance(meters: number | null): string {
   if (meters >= 1000) return `${(meters / 1000).toFixed(meters >= 10_000 ? 0 : 1)} km`;
   return `${meters} m`;
 }
+

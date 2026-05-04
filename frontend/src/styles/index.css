@@ -1,3 +1,79 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Postcard global theme. */
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: #f0e6cc;
+  color: #1a1610;
+  font-family: "Inter Tight", -apple-system, system-ui, sans-serif;
+  font-feature-settings: "ss01", "ss02";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tailwind's preflight wipes <button> styling but defaults to inheriting font;
+   force the postcard fonts everywhere by default. */
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+/* Subtle scrollbar tinted to match the cream paper. */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: #c4b083;
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #a89567;
+}
+
+/* ReactMarkdown content in the postcard chat — readable serif. */
+.postcard-prose {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #1a1610;
+}
+.postcard-prose strong {
+  color: #1a1610;
+  font-weight: 600;
+}
+.postcard-prose code {
+  font-family: "Courier Prime", "Courier New", monospace;
+  font-size: 0.92em;
+  background: #f7ecd2;
+  padding: 1px 5px;
+  border: 0.5px solid #dcc99a;
+}
+.postcard-prose ul,
+.postcard-prose ol {
+  margin: 6px 0 6px 18px;
+  padding: 0;
+}
+.postcard-prose li {
+  margin: 3px 0;
+}
+.postcard-prose p {
+  margin: 4px 0;
+}
+.postcard-prose a {
+  color: #b04428;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}

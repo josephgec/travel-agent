@@ -4,14 +4,17 @@ import {
   CalendarPlus,
   CheckCircle2,
   ChevronLeft,
+  Compass,
   Map as MapIcon,
   MapPin,
   Plane,
 } from "lucide-react";
 import { useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { PlanMap, type MapPin as MapPinType } from "../components/PlanMap";
+import { D_DISPLAY, D_MONO, D_PAL, D_SCRIPT, D_SERIF } from "../design/postcard/tokens";
+import { Banner, Button, PostcardPage, ScriptLabel } from "../design/postcard/primitives";
 import { type Plan, exportPlanToCalendar, getPlan, updatePlan } from "../lib/api";
-import { type MapPin as MapPinType, PlanMap } from "../components/PlanMap";
 
 type PlanItem = {
   time?: string;
@@ -87,111 +90,172 @@ export function PlanDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 px-6 py-6 text-sm text-neutral-500">Loading plan…</div>
+      <PostcardPage>
+        <div style={{ fontFamily: D_SERIF, fontStyle: "italic", color: D_PAL.muted }}>Loading plan…</div>
+      </PostcardPage>
     );
   }
   if (!plan) {
     return (
-      <div className="flex-1 px-6 py-6 text-sm text-rose-400">
-        Plan not found.{" "}
-        <button type="button" onClick={() => navigate("/plans")} className="underline">
-          Back to plans
-        </button>
-      </div>
+      <PostcardPage>
+        <Banner tone="error">
+          Plan not found.{" "}
+          <button
+            type="button"
+            onClick={() => navigate("/plans")}
+            style={{ background: "transparent", border: "none", color: D_PAL.accent, cursor: "pointer", textDecoration: "underline" }}
+          >
+            Back to plans
+          </button>
+        </Banner>
+      </PostcardPage>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
-        <header className="space-y-2">
+    <PostcardPage padded={false}>
+      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "20px 32px 40px" }}>
+        <div style={{ marginBottom: 20 }}>
           <Link
             to="/plans"
-            className="inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-200"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              fontFamily: D_SCRIPT,
+              fontSize: 14,
+              color: D_PAL.muted,
+              textDecoration: "none",
+            }}
           >
             <ChevronLeft size={14} />
-            All plans
+            all plans
           </Link>
-          <div className="flex items-baseline gap-3 flex-wrap">
-            <h1 className="text-2xl font-semibold text-neutral-100">{plan.title}</h1>
-            <span
-              className={`text-xs font-mono uppercase px-2 py-0.5 rounded ${
-                plan.status === "saved"
-                  ? "bg-emerald-950/40 text-emerald-300"
-                  : plan.status === "booked"
-                    ? "bg-amber-950/40 text-amber-300"
-                    : "bg-neutral-800 text-neutral-400"
-              }`}
-            >
-              {plan.status}
+        </div>
+
+        <header style={{ marginBottom: 24 }}>
+          <ScriptLabel size={17} rotate={-1.5}>your trip —</ScriptLabel>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
+            <span style={{ fontFamily: D_DISPLAY, fontSize: 32, fontWeight: 600, letterSpacing: -0.6, lineHeight: 1.1 }}>
+              {plan.title}
             </span>
+            <StatusPill status={plan.status} />
             {data.dates?.start && data.dates?.end && (
-              <span className="text-sm text-neutral-400">
-                {fmt(data.dates.start)} – {fmt(data.dates.end)}
+              <span style={{ fontFamily: D_MONO, fontSize: 11, color: D_PAL.muted, letterSpacing: 1 }}>
+                · {fmt(data.dates.start).toUpperCase()} – {fmt(data.dates.end).toUpperCase()}
               </span>
             )}
             {data.budget_estimate?.total !== undefined && (
-              <span className="text-sm text-neutral-400">
+              <span style={{ fontFamily: D_SERIF, fontStyle: "italic", fontSize: 14, color: D_PAL.ink3 }}>
                 · ~{money(data.budget_estimate.total, data.budget_estimate.currency)}
               </span>
             )}
           </div>
-          {data.summary && <p className="text-sm text-neutral-300">{data.summary}</p>}
-          <div className="flex gap-2 pt-2">
+          {data.summary && (
+            <div
+              style={{
+                fontFamily: D_SERIF,
+                fontStyle: "italic",
+                fontSize: 14,
+                color: D_PAL.ink2,
+                lineHeight: 1.55,
+                marginTop: 10,
+                maxWidth: 700,
+              }}
+            >
+              <ScriptLabel size={15} style={{ marginRight: 6 }}>W. —</ScriptLabel>
+              {data.summary}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
             {plan.status !== "saved" && (
-              <button
-                type="button"
-                onClick={() => saveMut.mutate()}
-                disabled={saveMut.isPending}
-                className="inline-flex items-center gap-1 rounded bg-neutral-100 text-neutral-900 px-3 py-1.5 text-xs font-medium hover:bg-white disabled:opacity-50"
-              >
+              <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
                 <CheckCircle2 size={12} />
                 {saveMut.isPending ? "Saving…" : "Save plan"}
-              </button>
+              </Button>
             )}
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={() => {
-                if (confirm("Add every timed plan item to your Google Calendar?"))
-                  exportMut.mutate();
+                if (confirm("Add every timed plan item to your Google Calendar?")) exportMut.mutate();
               }}
               disabled={exportMut.isPending || !data.days?.length}
-              className="inline-flex items-center gap-1 rounded border border-indigo-700 text-indigo-200 px-3 py-1.5 text-xs hover:bg-indigo-950/60 disabled:opacity-50"
             >
               <CalendarPlus size={12} />
               {exportMut.isPending ? "Exporting…" : "Export to Calendar"}
-            </button>
+            </Button>
+            <Link
+              to="/options"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                background: "transparent",
+                color: D_PAL.accent,
+                border: `0.5px solid ${D_PAL.accent}`,
+                padding: "9px 14px",
+                fontFamily: D_DISPLAY,
+                fontSize: 12,
+                letterSpacing: 1.4,
+                textTransform: "uppercase",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+              title="Browse ranked options for this trip"
+            >
+              <Compass size={12} />
+              Browse options
+            </Link>
             {exportMut.data && (
-              <span className="text-xs text-emerald-300 self-center">
-                Exported {exportMut.data.created} event(s)
+              <span style={{ alignSelf: "center", fontFamily: D_SCRIPT, fontSize: 14, color: D_PAL.green }}>
+                exported {exportMut.data.created} event(s)
               </span>
             )}
           </div>
         </header>
 
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 24,
+          }}
+          className="grid-cols-1 lg:grid-cols-2"
+        >
           <div>
-            <h2 className="text-sm font-semibold text-neutral-300 mb-2">Map</h2>
+            <SectionTitle>Map</SectionTitle>
             {pins.length === 0 ? (
-              <div className="rounded-md border border-neutral-800 bg-neutral-950 h-96 flex items-center justify-center text-xs text-neutral-500 text-center px-4">
-                No coordinates on this plan yet.
-                <br />
-                Plan items need <span className="font-mono">latitude</span> /{" "}
-                <span className="font-mono">longitude</span> to pin them.
+              <div
+                style={{
+                  background: D_PAL.paperHi,
+                  border: `0.5px dashed ${D_PAL.rule}`,
+                  height: 360,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  padding: "0 24px",
+                  fontFamily: D_SERIF,
+                  fontStyle: "italic",
+                  fontSize: 13,
+                  color: D_PAL.muted,
+                }}
+              >
+                No coordinates on this plan yet. Plan items need latitude / longitude to pin them.
               </div>
             ) : (
-              <PlanMap pins={pins} className="w-full h-96 rounded-md overflow-hidden" />
+              <PlanMap pins={pins} className="w-full h-96" />
             )}
           </div>
 
-          <div className="space-y-4">
+          <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
             {data.flights && data.flights.length > 0 && (
               <div>
-                <h2 className="text-sm font-semibold text-neutral-300 mb-2">Flights</h2>
-                <ul className="space-y-1 text-sm">
+                <SectionTitle>Flights</SectionTitle>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                   {data.flights.map((f, i) => (
-                    <li key={i} className="flex items-center gap-2 text-neutral-300">
-                      <Plane size={14} className="text-neutral-500" />
+                    <li key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: `0.5px dotted ${D_PAL.ruleSoft}`, fontFamily: D_SERIF, fontSize: 14, color: D_PAL.ink2 }}>
+                      <Plane size={14} style={{ color: D_PAL.muted }} />
                       {f.summary}
                     </li>
                   ))}
@@ -201,13 +265,15 @@ export function PlanDetailPage() {
 
             {data.lodging && data.lodging.length > 0 && (
               <div>
-                <h2 className="text-sm font-semibold text-neutral-300 mb-2">Lodging</h2>
-                <ul className="space-y-1 text-sm">
+                <SectionTitle>Lodging</SectionTitle>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                   {data.lodging.map((l, i) => (
-                    <li key={i} className="flex items-center gap-2 text-neutral-300">
-                      <MapPin size={14} className="text-neutral-500" />
+                    <li key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: `0.5px dotted ${D_PAL.ruleSoft}`, fontFamily: D_SERIF, fontSize: 14, color: D_PAL.ink2 }}>
+                      <MapPin size={14} style={{ color: D_PAL.muted }} />
                       {l.summary}
-                      {l.nights ? <span className="text-neutral-500"> · {l.nights} nights</span> : null}
+                      {l.nights ? (
+                        <span style={{ color: D_PAL.muted, marginLeft: 4 }}>· {l.nights} nights</span>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -216,12 +282,12 @@ export function PlanDetailPage() {
 
             {data.budget_estimate?.breakdown && (
               <div>
-                <h2 className="text-sm font-semibold text-neutral-300 mb-2">Budget</h2>
-                <ul className="text-sm space-y-1">
+                <SectionTitle>Budget</SectionTitle>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                   {Object.entries(data.budget_estimate.breakdown).map(([k, v]) => (
-                    <li key={k} className="flex justify-between text-neutral-300">
-                      <span className="text-neutral-500">{k}</span>
-                      <span>{money(v, data.budget_estimate?.currency)}</span>
+                    <li key={k} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `0.5px dotted ${D_PAL.ruleSoft}`, fontFamily: D_SERIF, fontSize: 14 }}>
+                      <span style={{ color: D_PAL.muted, textTransform: "capitalize" }}>{k}</span>
+                      <span style={{ color: D_PAL.ink2 }}>{money(v, data.budget_estimate?.currency)}</span>
                     </li>
                   ))}
                 </ul>
@@ -230,10 +296,12 @@ export function PlanDetailPage() {
 
             {data.open_questions && data.open_questions.length > 0 && (
               <div>
-                <h2 className="text-sm font-semibold text-neutral-300 mb-2">Open questions</h2>
-                <ul className="list-disc list-inside text-sm text-neutral-300 space-y-1">
+                <SectionTitle script="open questions">Open questions</SectionTitle>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                   {data.open_questions.map((q, i) => (
-                    <li key={i}>{q}</li>
+                    <li key={i} style={{ padding: "4px 0", fontFamily: D_SERIF, fontStyle: "italic", fontSize: 14, color: D_PAL.ink2 }}>
+                      — {q}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -242,36 +310,82 @@ export function PlanDetailPage() {
         </section>
 
         {data.days && data.days.length > 0 && (
-          <section>
-            <h2 className="text-sm font-semibold text-neutral-300 mb-2">Itinerary</h2>
-            <ol className="space-y-4">
+          <section style={{ marginTop: 32 }}>
+            <SectionTitle script="day by day">Itinerary</SectionTitle>
+            <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
               {data.days.map((day, i) => (
-                <li key={day.date ?? i} className="rounded-md border border-neutral-800">
-                  <div className="px-4 py-2 border-b border-neutral-800 text-xs flex items-center gap-2">
-                    <span className="font-mono text-neutral-300">Day {i + 1}</span>
-                    {day.date && <span className="text-neutral-400">· {fmt(day.date)}</span>}
+                <li
+                  key={day.date ?? i}
+                  style={{
+                    background: D_PAL.paper,
+                    border: `0.5px solid ${D_PAL.rule}`,
+                    boxShadow: `2px 2px 0 ${D_PAL.ruleSoft}`,
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "8px 16px",
+                      borderBottom: `0.5px dashed ${D_PAL.rule}`,
+                      display: "flex",
+                      alignItems: "baseline",
+                      gap: 10,
+                    }}
+                  >
+                    <span style={{ fontFamily: D_MONO, fontSize: 10, color: D_PAL.muted, letterSpacing: 1 }}>DAY {i + 1}</span>
+                    {day.date && (
+                      <span style={{ fontFamily: D_DISPLAY, fontSize: 14, fontWeight: 600 }}>{fmt(day.date)}</span>
+                    )}
                   </div>
-                  <ul className="divide-y divide-neutral-800">
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                     {(day.items ?? []).map((item, j) => (
-                      <li key={j} className="px-4 py-2 flex items-start gap-3 text-sm">
+                      <li
+                        key={j}
+                        style={{
+                          padding: "10px 16px",
+                          borderBottom: `0.5px dotted ${D_PAL.ruleSoft}`,
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 14,
+                        }}
+                      >
                         {item.time && (
-                          <span className="text-neutral-500 font-mono shrink-0 w-16">
+                          <span
+                            style={{
+                              fontFamily: D_MONO,
+                              fontSize: 12,
+                              color: D_PAL.ink3,
+                              letterSpacing: 0.5,
+                              flexShrink: 0,
+                              width: 56,
+                            }}
+                          >
                             {item.time}
                           </span>
                         )}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-neutral-100">
-                            {item.title ?? "—"}
+                        <div style={{ flex: 1 }}>
+                          <div>
+                            <span style={{ fontFamily: D_DISPLAY, fontSize: 15, fontWeight: 500 }}>{item.title ?? "—"}</span>
                             {item.kind && (
-                              <span className="text-neutral-500 ml-2 text-xs font-mono">
+                              <span style={{ marginLeft: 6, fontFamily: D_MONO, fontSize: 9.5, color: D_PAL.muted, textTransform: "uppercase", letterSpacing: 1 }}>
                                 {item.kind}
                               </span>
                             )}
                           </div>
                           {(item.location || item.notes) && (
-                            <div className="text-xs text-neutral-500 mt-0.5 flex items-center gap-3 flex-wrap">
+                            <div
+                              style={{
+                                marginTop: 4,
+                                fontFamily: D_SERIF,
+                                fontStyle: "italic",
+                                fontSize: 12.5,
+                                color: D_PAL.ink3,
+                                display: "flex",
+                                gap: 12,
+                                flexWrap: "wrap",
+                              }}
+                            >
                               {item.location && (
-                                <span className="flex items-center gap-1">
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                                   <MapIcon size={11} />
                                   {item.location}
                                 </span>
@@ -289,7 +403,49 @@ export function PlanDetailPage() {
           </section>
         )}
       </div>
+    </PostcardPage>
+  );
+}
+
+function SectionTitle({ children, script }: { children: React.ReactNode; script?: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 10 }}>
+      <span style={{ fontFamily: D_MONO, fontSize: 9.5, color: D_PAL.muted, letterSpacing: 1.2 }}>
+        {String(children).toUpperCase()}
+      </span>
+      <span style={{ flex: 1, height: 1, borderTop: `0.5px dashed ${D_PAL.rule}`, marginBottom: 4 }} />
+      {script && (
+        <span style={{ fontFamily: D_SCRIPT, fontSize: 14, color: D_PAL.accent, transform: "rotate(-1deg)", display: "inline-block" }}>
+          {script}
+        </span>
+      )}
     </div>
+  );
+}
+
+function StatusPill({ status }: { status: Plan["status"] }) {
+  const colors: Record<Plan["status"], { bg: string; color: string; border: string }> = {
+    saved: { bg: "#e9f0e3", color: D_PAL.green, border: D_PAL.green },
+    booked: { bg: "#f7e8c8", color: "#7a4f12", border: "#a86c1c" },
+    draft: { bg: D_PAL.paperHi, color: D_PAL.muted, border: D_PAL.rule },
+  };
+  const c = colors[status];
+  return (
+    <span
+      style={{
+        fontFamily: D_DISPLAY,
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: 1,
+        textTransform: "uppercase",
+        color: c.color,
+        background: c.bg,
+        border: `0.5px solid ${c.border}`,
+        padding: "2px 7px",
+      }}
+    >
+      {status}
+    </span>
   );
 }
 

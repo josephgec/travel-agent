@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Mail, Plus, Trash2, XCircle } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { D_DISPLAY, D_MONO, D_PAL, D_SCRIPT, D_SERIF } from "../design/postcard/tokens";
+import { Banner, Button, EmptyState, PageHeader, PostcardPage, ScriptLabel } from "../design/postcard/primitives";
 import {
   type GoogleStatus,
   type Memory,
@@ -18,10 +20,29 @@ import {
 
 export function SettingsPage() {
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-6 space-y-10 max-w-4xl">
-      <GoogleSection />
-      <PreferencesSection />
-      <MemoriesSection />
+    <PostcardPage>
+      <PageHeader
+        eyebrow="your agent's notebook —"
+        title="Settings"
+        subtitle="Connect Google for Gmail + Calendar, manage preferences and what the agent remembers."
+      />
+      <div style={{ display: "flex", flexDirection: "column", gap: 36, marginTop: 8 }}>
+        <GoogleSection />
+        <PreferencesSection />
+        <MemoriesSection />
+      </div>
+    </PostcardPage>
+  );
+}
+
+function SectionTitle({ children, script }: { children: React.ReactNode; script?: string }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+        <span style={{ fontFamily: D_DISPLAY, fontSize: 22, fontWeight: 600, letterSpacing: -0.4 }}>{children}</span>
+        {script && <ScriptLabel size={16}>{script}</ScriptLabel>}
+      </div>
+      <div style={{ height: 1, borderTop: `0.5px dashed ${D_PAL.rule}`, marginTop: 8 }} />
     </div>
   );
 }
@@ -42,7 +63,6 @@ function GoogleSection() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["google_status"] }),
   });
 
-  // Clear redirect query params after we render once.
   useEffect(() => {
     if (successFlag || errorFlag) {
       const t = setTimeout(() => {
@@ -56,71 +76,117 @@ function GoogleSection() {
 
   return (
     <section>
-      <h2 className="text-lg font-semibold mb-3">Google account</h2>
-      <p className="text-sm text-neutral-400 mb-4">
-        Connect your Google account so the agent can read travel emails (Gmail) and
-        manage events (Calendar).
+      <SectionTitle script="connect your account">Google</SectionTitle>
+      <p style={{ fontFamily: D_SERIF, fontStyle: "italic", color: D_PAL.ink3, fontSize: 14, marginTop: -4, marginBottom: 14 }}>
+        Connect Google so the agent can read travel emails (Gmail) and manage events (Calendar).
       </p>
       {successFlag === "connected" && (
-        <div className="mb-3 text-sm text-emerald-400 bg-emerald-950/30 border border-emerald-900 rounded px-3 py-2">
-          Google account connected.
+        <div style={{ marginBottom: 12 }}>
+          <Banner tone="success">Google account connected.</Banner>
         </div>
       )}
       {errorFlag && (
-        <div className="mb-3 text-sm text-rose-400 bg-rose-950/30 border border-rose-900 rounded px-3 py-2">
-          Google connection error: {errorFlag}
+        <div style={{ marginBottom: 12 }}>
+          <Banner tone="error">Google connection error: {errorFlag}</Banner>
         </div>
       )}
-      <div className="rounded-md border border-neutral-800 px-4 py-3 text-sm">
+      <div
+        style={{
+          background: D_PAL.paper,
+          border: `0.5px solid ${D_PAL.rule}`,
+          boxShadow: `2px 2px 0 ${D_PAL.ruleSoft}`,
+          padding: "16px 18px",
+        }}
+      >
         {status?.connected ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-neutral-100">
-              <CheckCircle2 size={16} className="text-emerald-400" />
-              Connected as <span className="font-medium">{status.account_email ?? "unknown"}</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <CheckCircle2 size={16} style={{ color: D_PAL.green }} />
+              <span style={{ fontFamily: D_SERIF, fontSize: 14 }}>
+                Connected as <strong style={{ color: D_PAL.ink }}>{status.account_email ?? "unknown"}</strong>
+              </span>
             </div>
-            <div className="flex flex-wrap gap-2 text-xs">
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {Object.entries(status.capabilities).map(([name, granted]) => (
                 <span
                   key={name}
-                  className={`flex items-center gap-1 px-2 py-1 rounded font-mono ${
-                    granted
-                      ? "bg-emerald-950/30 text-emerald-300"
-                      : "bg-neutral-900 text-neutral-500"
-                  }`}
+                  style={{
+                    fontFamily: D_MONO,
+                    fontSize: 9.5,
+                    letterSpacing: 0.6,
+                    padding: "3px 8px",
+                    background: granted ? "#e9f0e3" : D_PAL.paperHi,
+                    color: granted ? D_PAL.green : D_PAL.muted,
+                    border: `0.5px solid ${granted ? D_PAL.green : D_PAL.rule}`,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
                 >
-                  {granted ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                  {name}
+                  {granted ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
+                  {name.toUpperCase()}
                 </span>
               ))}
             </div>
-            <div className="flex gap-2 text-xs">
+            <div style={{ display: "flex", gap: 8 }}>
               <a
                 href={googleConnectUrl(["gmail", "calendar"])}
-                className="rounded border border-neutral-700 px-3 py-1.5 hover:bg-neutral-800"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: "transparent",
+                  color: D_PAL.ink,
+                  border: `0.5px solid ${D_PAL.rule}`,
+                  padding: "6px 12px",
+                  fontFamily: D_DISPLAY,
+                  fontSize: 11,
+                  letterSpacing: 1.4,
+                  textTransform: "uppercase",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
               >
-                Re-authorize / add scopes
+                Re-authorize
               </a>
-              <button
-                type="button"
+              <Button
+                variant="danger"
+                size="sm"
                 onClick={() => {
                   if (confirm("Disconnect Google account? Stored token will be deleted."))
                     disconnectMut.mutate();
                 }}
-                className="rounded border border-rose-900 text-rose-400 px-3 py-1.5 hover:bg-rose-950/30"
               >
                 Disconnect
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-neutral-400">
-              <XCircle size={16} className="text-neutral-600" />
-              Not connected.
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <XCircle size={16} style={{ color: D_PAL.muted }} />
+              <span style={{ fontFamily: D_SERIF, fontStyle: "italic", color: D_PAL.muted, fontSize: 14 }}>
+                Not connected.
+              </span>
             </div>
             <a
               href={googleConnectUrl(["gmail"])}
-              className="inline-flex items-center gap-2 rounded bg-neutral-100 text-neutral-900 px-3 py-1.5 text-xs font-medium hover:bg-white"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                background: D_PAL.ink,
+                color: D_PAL.cream,
+                border: "none",
+                padding: "8px 14px",
+                fontFamily: D_DISPLAY,
+                fontSize: 11.5,
+                letterSpacing: 1.4,
+                textTransform: "uppercase",
+                fontWeight: 600,
+                textDecoration: "none",
+                width: "fit-content",
+              }}
             >
               <Mail size={14} />
               Connect Gmail (read-only)
@@ -140,8 +206,7 @@ function PreferencesSection() {
   });
 
   const upsertMut = useMutation({
-    mutationFn: ({ key, value }: { key: string; value: unknown }) =>
-      upsertPreference(key, value),
+    mutationFn: ({ key, value }: { key: string; value: unknown }) => upsertPreference(key, value),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["preferences"] }),
   });
   const deleteMut = useMutation({
@@ -151,22 +216,29 @@ function PreferencesSection() {
 
   return (
     <section>
-      <h2 className="text-lg font-semibold mb-3">Preferences</h2>
-      <p className="text-sm text-neutral-400 mb-4">
+      <SectionTitle script="auto-extracted">Preferences</SectionTitle>
+      <p style={{ fontFamily: D_SERIF, fontStyle: "italic", color: D_PAL.ink3, fontSize: 14, marginTop: -4, marginBottom: 14 }}>
         Auto-extracted from conversations. Edit values inline; the agent reads these on every turn.
       </p>
-      <div className="rounded-md border border-neutral-800 divide-y divide-neutral-800">
-        {prefs.map((p) => (
+      <div
+        style={{
+          background: D_PAL.paper,
+          border: `0.5px solid ${D_PAL.rule}`,
+          boxShadow: `2px 2px 0 ${D_PAL.ruleSoft}`,
+        }}
+      >
+        {prefs.map((p, i) => (
           <PreferenceRow
             key={p.id}
             preference={p}
+            last={i === prefs.length - 1 && false}
             onSave={(value) => upsertMut.mutate({ key: p.key, value })}
             onDelete={() => deleteMut.mutate(p.key)}
           />
         ))}
         {prefs.length === 0 && (
-          <div className="px-4 py-6 text-center text-neutral-500 text-sm">
-            No preferences yet. Tell the agent things like "I always fly aisle" and they'll appear here.
+          <div style={{ padding: "20px 18px", textAlign: "center", fontFamily: D_SERIF, fontStyle: "italic", color: D_PAL.muted, fontSize: 13 }}>
+            <ScriptLabel size={15}>nothing yet —</ScriptLabel> Tell the agent things like "I always fly aisle" and they'll appear here.
           </div>
         )}
         <NewPreferenceRow onSave={(key, value) => upsertMut.mutate({ key, value })} />
@@ -181,6 +253,7 @@ function PreferenceRow({
   onDelete,
 }: {
   preference: Preference;
+  last: boolean;
   onSave: (value: unknown) => void;
   onDelete: () => void;
 }) {
@@ -193,15 +266,35 @@ function PreferenceRow({
       onSave(JSON.parse(draft));
       setTouched(false);
     } catch {
-      // not valid JSON — store as raw string
       onSave(draft);
       setTouched(false);
     }
   };
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 text-sm">
-      <span className="font-mono text-neutral-300 w-64 truncate">{preference.key}</span>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "10px 14px",
+        borderBottom: `0.5px dashed ${D_PAL.rule}`,
+      }}
+    >
+      <span
+        style={{
+          fontFamily: D_MONO,
+          fontSize: 11,
+          color: D_PAL.ink2,
+          width: 240,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+        }}
+      >
+        {preference.key}
+      </span>
       <input
         type="text"
         value={draft}
@@ -213,15 +306,24 @@ function PreferenceRow({
         onKeyDown={(e) => {
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         }}
-        className="flex-1 bg-neutral-900 border border-neutral-800 rounded px-2 py-1 text-neutral-100 font-mono"
+        style={{
+          flex: 1,
+          background: D_PAL.paperHi,
+          border: `0.5px solid ${D_PAL.ruleSoft}`,
+          padding: "5px 8px",
+          fontFamily: D_MONO,
+          fontSize: 12,
+          color: D_PAL.ink,
+          outline: "none",
+        }}
       />
       <button
         type="button"
         onClick={onDelete}
         aria-label="Delete preference"
-        className="text-neutral-500 hover:text-rose-400"
+        style={{ background: "transparent", border: "none", color: D_PAL.muted, cursor: "pointer" }}
       >
-        <Trash2 size={14} />
+        <Trash2 size={13} />
       </button>
     </div>
   );
@@ -238,7 +340,7 @@ function NewPreferenceRow({ onSave }: { onSave: (key: string, value: unknown) =>
     try {
       parsed = JSON.parse(value);
     } catch {
-      // fall through, keep as string
+      // keep as string
     }
     onSave(key.trim(), parsed);
     setKey("");
@@ -246,29 +348,52 @@ function NewPreferenceRow({ onSave }: { onSave: (key: string, value: unknown) =>
   };
 
   return (
-    <form onSubmit={submit} className="flex items-center gap-3 px-4 py-2 text-sm bg-neutral-950">
+    <form
+      onSubmit={submit}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "10px 14px",
+        background: D_PAL.paperWarm,
+      }}
+    >
       <input
         type="text"
         value={key}
         onChange={(e) => setKey(e.target.value)}
         placeholder="key (e.g. flights.seat)"
-        className="w-64 bg-neutral-900 border border-neutral-800 rounded px-2 py-1 text-neutral-100 font-mono placeholder-neutral-600"
+        style={{
+          width: 240,
+          background: D_PAL.paper,
+          border: `0.5px solid ${D_PAL.ruleSoft}`,
+          padding: "5px 8px",
+          fontFamily: D_MONO,
+          fontSize: 12,
+          outline: "none",
+          color: D_PAL.ink,
+        }}
       />
       <input
         type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder='value (JSON, e.g. "aisle")'
-        className="flex-1 bg-neutral-900 border border-neutral-800 rounded px-2 py-1 text-neutral-100 font-mono placeholder-neutral-600"
+        style={{
+          flex: 1,
+          background: D_PAL.paper,
+          border: `0.5px solid ${D_PAL.ruleSoft}`,
+          padding: "5px 8px",
+          fontFamily: D_MONO,
+          fontSize: 12,
+          outline: "none",
+          color: D_PAL.ink,
+        }}
       />
-      <button
-        type="submit"
-        disabled={!key.trim()}
-        className="rounded bg-neutral-100 text-neutral-900 px-3 py-1 disabled:opacity-50 flex items-center gap-1"
-      >
-        <Plus size={12} />
+      <Button type="submit" size="sm" disabled={!key.trim()}>
+        <Plus size={11} />
         Add
-      </button>
+      </Button>
     </form>
   );
 }
@@ -286,41 +411,71 @@ function MemoriesSection() {
 
   return (
     <section>
-      <h2 className="text-lg font-semibold mb-3">Memories</h2>
-      <p className="text-sm text-neutral-400 mb-4">
-        Episodic memory — the agent searches these by similarity when relevant.
+      <SectionTitle script="episodic memory">Memories</SectionTitle>
+      <p style={{ fontFamily: D_SERIF, fontStyle: "italic", color: D_PAL.ink3, fontSize: 14, marginTop: -4, marginBottom: 14 }}>
+        The agent searches these by similarity when relevant.
       </p>
-      <div className="space-y-2">
-        {memories.map((m) => (
-          <div
-            key={m.id}
-            className="rounded-md border border-neutral-800 px-4 py-3 text-sm flex items-start gap-3"
-          >
-            <div className="flex-1">
-              <div className="flex items-center gap-2 text-xs text-neutral-500 mb-1">
-                <span className="rounded bg-neutral-900 px-2 py-0.5 font-mono">{m.kind}</span>
-                <span>importance {m.importance}/5</span>
-                <span>· {new Date(m.created_at).toLocaleDateString()}</span>
+      {memories.length === 0 ? (
+        <EmptyState
+          title="no memories yet"
+          hint="Have a conversation about a trip and they'll be extracted automatically."
+        />
+      ) : (
+        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+          {memories.map((m) => (
+            <li key={m.id}>
+              <div
+                style={{
+                  background: D_PAL.paper,
+                  border: `0.5px solid ${D_PAL.rule}`,
+                  boxShadow: `2px 2px 0 ${D_PAL.ruleSoft}`,
+                  padding: "12px 16px",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 12,
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, marginBottom: 4 }}>
+                    <span
+                      style={{
+                        fontFamily: D_MONO,
+                        fontSize: 9.5,
+                        letterSpacing: 0.6,
+                        padding: "2px 6px",
+                        background: D_PAL.paperHi,
+                        border: `0.5px solid ${D_PAL.rule}`,
+                        textTransform: "uppercase",
+                        color: D_PAL.ink2,
+                      }}
+                    >
+                      {m.kind}
+                    </span>
+                    <span style={{ fontFamily: D_MONO, fontSize: 9.5, color: D_PAL.muted, letterSpacing: 0.5 }}>
+                      IMPORTANCE {m.importance}/5
+                    </span>
+                    <span style={{ fontFamily: D_SERIF, fontStyle: "italic", fontSize: 12, color: D_PAL.muted }}>
+                      · {new Date(m.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div style={{ fontFamily: D_DISPLAY, fontSize: 16, fontWeight: 600 }}>{m.title}</div>
+                  <div style={{ fontFamily: D_SERIF, fontSize: 13.5, color: D_PAL.ink2, marginTop: 4, lineHeight: 1.55 }}>
+                    {m.content}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => deleteMut.mutate(m.id)}
+                  aria-label="Delete memory"
+                  style={{ background: "transparent", border: "none", color: D_PAL.muted, cursor: "pointer" }}
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
-              <div className="text-neutral-100 font-medium">{m.title}</div>
-              <div className="text-neutral-300 mt-1">{m.content}</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => deleteMut.mutate(m.id)}
-              aria-label="Delete memory"
-              className="text-neutral-500 hover:text-rose-400"
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
-        {memories.length === 0 && (
-          <div className="text-center text-neutral-500 text-sm py-6">
-            No memories yet. Have a conversation about a trip and they'll be extracted automatically.
-          </div>
-        )}
-      </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

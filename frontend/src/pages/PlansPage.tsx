@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { ScrollText, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { D_DISPLAY, D_MONO, D_PAL, D_SCRIPT, D_SERIF } from "../design/postcard/tokens";
+import { EmptyState, PageHeader, PostcardPage } from "../design/postcard/primitives";
 import { type Plan, deletePlan, listPlans } from "../lib/api";
 
 export function PlansPage() {
@@ -17,22 +19,22 @@ export function PlansPage() {
   });
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-6 max-w-4xl space-y-4">
-      <header>
-        <h2 className="text-lg font-semibold">Plans</h2>
-        <p className="text-sm text-neutral-400">
-          Trip plans built by the agent. Drafts and saved plans both show here.
-        </p>
-      </header>
+    <PostcardPage>
+      <PageHeader
+        eyebrow="your trips —"
+        title="Plans"
+        subtitle="Trip plans built by the agent. Drafts and saved plans both show here."
+      />
 
       {isLoading ? (
-        <div className="text-sm text-neutral-500">Loading…</div>
+        <div style={{ fontFamily: D_SERIF, fontStyle: "italic", color: D_PAL.muted }}>Loading…</div>
       ) : plans.length === 0 ? (
-        <div className="rounded-md border border-neutral-800 px-4 py-8 text-center text-sm text-neutral-500">
-          No plans yet. Try asking the agent to plan a trip.
-        </div>
+        <EmptyState
+          title="no plans yet"
+          hint="Ask the agent to plan a trip — once it builds a draft, it'll show up here."
+        />
       ) : (
-        <ul className="space-y-2">
+        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
           {plans.map((p) => {
             const data = p.data as {
               dates?: { start?: string; end?: string };
@@ -40,35 +42,59 @@ export function PlansPage() {
               days?: unknown[];
             };
             return (
-              <li
-                key={p.id}
-                className="rounded-md border border-neutral-800 hover:border-neutral-700 transition-colors"
-              >
-                <div className="flex items-start gap-3 px-4 py-3">
-                  <ScrollText size={16} className="text-indigo-300 mt-0.5" />
-                  <div className="flex-1 min-w-0">
+              <li key={p.id}>
+                <div
+                  style={{
+                    background: D_PAL.paper,
+                    border: `0.5px solid ${D_PAL.rule}`,
+                    boxShadow: `3px 3px 0 ${D_PAL.ruleSoft}`,
+                    padding: "16px 18px",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 14,
+                  }}
+                >
+                  <ScrollText size={18} style={{ color: D_PAL.accent, marginTop: 2 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <Link
                       to={`/plans/${p.id}`}
-                      className="text-neutral-100 font-medium hover:underline"
+                      style={{
+                        fontFamily: D_DISPLAY,
+                        fontSize: 18,
+                        fontWeight: 600,
+                        letterSpacing: -0.3,
+                        color: D_PAL.ink,
+                        textDecoration: "none",
+                        borderBottom: `0.5px dotted ${D_PAL.rule}`,
+                      }}
                     >
                       {p.title}
                     </Link>
-                    <div className="text-xs text-neutral-400 flex flex-wrap gap-3 mt-1">
+                    <div
+                      style={{
+                        marginTop: 8,
+                        display: "flex",
+                        gap: 14,
+                        flexWrap: "wrap",
+                        alignItems: "baseline",
+                      }}
+                    >
                       <StatusPill status={p.status} />
                       {data.dates?.start && data.dates?.end && (
-                        <span>
-                          {fmt(data.dates.start)} – {fmt(data.dates.end)}
-                        </span>
+                        <Item label="dates" value={`${fmt(data.dates.start)} – ${fmt(data.dates.end)}`} />
                       )}
                       {data.budget_estimate?.total !== undefined && (
-                        <span>~{money(data.budget_estimate.total, data.budget_estimate.currency)}</span>
+                        <Item label="est. budget" value={money(data.budget_estimate.total, data.budget_estimate.currency)} />
                       )}
                       {Array.isArray(data.days) && (
-                        <span>
-                          {data.days.length} day{data.days.length === 1 ? "" : "s"}
-                        </span>
+                        <Item
+                          label="days"
+                          value={`${data.days.length} day${data.days.length === 1 ? "" : "s"}`}
+                        />
                       )}
-                      <span className="text-neutral-500">updated {fmt(p.updated_at)}</span>
+                      <span style={{ fontFamily: D_MONO, fontSize: 9.5, color: D_PAL.muted, letterSpacing: 0.6 }}>
+                        UPDATED {fmtShort(p.updated_at)}
+                      </span>
                     </div>
                   </div>
                   <button
@@ -77,7 +103,12 @@ export function PlansPage() {
                       if (confirm(`Delete plan "${p.title}"?`)) deleteMut.mutate(p.id);
                     }}
                     aria-label="Delete plan"
-                    className="text-neutral-500 hover:text-rose-400"
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: D_PAL.muted,
+                      cursor: "pointer",
+                    }}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -87,25 +118,56 @@ export function PlansPage() {
           })}
         </ul>
       )}
-    </div>
+    </PostcardPage>
   );
 }
 
 function StatusPill({ status }: { status: Plan["status"] }) {
-  const cls =
-    status === "saved"
-      ? "bg-emerald-950/40 text-emerald-300"
-      : status === "booked"
-        ? "bg-amber-950/40 text-amber-300"
-        : "bg-neutral-800 text-neutral-400";
+  const colors: Record<Plan["status"], { bg: string; color: string; border: string }> = {
+    saved: { bg: "#e9f0e3", color: D_PAL.green, border: D_PAL.green },
+    booked: { bg: "#f7e8c8", color: "#7a4f12", border: "#a86c1c" },
+    draft: { bg: D_PAL.paperHi, color: D_PAL.muted, border: D_PAL.rule },
+  };
+  const c = colors[status];
   return (
-    <span className={`text-xs font-mono uppercase px-1.5 py-0.5 rounded ${cls}`}>{status}</span>
+    <span
+      style={{
+        fontFamily: D_DISPLAY,
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: 1,
+        textTransform: "uppercase",
+        color: c.color,
+        background: c.bg,
+        border: `0.5px solid ${c.border}`,
+        padding: "2px 7px",
+      }}
+    >
+      {status}
+    </span>
+  );
+}
+
+function Item({ label, value }: { label: string; value: string }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 4 }}>
+      <span style={{ fontFamily: D_SCRIPT, fontSize: 13, color: D_PAL.accent }}>{label} —</span>
+      <span style={{ fontFamily: D_SERIF, fontSize: 13, color: D_PAL.ink2 }}>{value}</span>
+    </span>
   );
 }
 
 function fmt(iso: string): string {
   try {
     return format(parseISO(iso), "MMM d, yyyy");
+  } catch {
+    return iso;
+  }
+}
+
+function fmtShort(iso: string): string {
+  try {
+    return format(parseISO(iso), "MMM d");
   } catch {
     return iso;
   }

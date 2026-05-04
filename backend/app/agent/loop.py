@@ -96,6 +96,18 @@ async def _persist_message(
     return msg
 
 
+def _derive_title(message: str, max_len: int = 50) -> str:
+    """Cheap auto-title from the user's first message — first line, trimmed at a word boundary."""
+    text = (message or "").strip().split("\n", 1)[0].strip()
+    if len(text) <= max_len:
+        return text or "New chat"
+    cut = text[:max_len]
+    sp = cut.rfind(" ")
+    if sp > max_len * 0.5:
+        cut = cut[:sp]
+    return cut.rstrip(" ,.;:") + "…"
+
+
 async def _ensure_conversation(db: AsyncSession, conversation_id: uuid.UUID) -> Conversation:
     conv = await db.get(Conversation, conversation_id)
     if conv is None:
@@ -158,10 +170,15 @@ async def run_turn(
 ) -> AsyncIterator[StreamEvent]:
     """Run a single user turn end-to-end. Yields StreamEvents as they happen."""
     try:
-        await _ensure_conversation(db, conversation_id)
+        conv = await _ensure_conversation(db, conversation_id)
     except ValueError as e:
         yield StreamEvent("error", {"message": str(e)})
         return
+
+    # Auto-title brand-new conversations from the first user message.
+    if not conv.title:
+        conv.title = _derive_title(user_message)
+        await db.commit()
 
     # 1-2: persist user message
     await _persist_message(db, conversation_id, "user", {"text": user_message})

@@ -30,11 +30,18 @@ def build_system_prompt(user_context: dict[str, Any] | None = None) -> str:
         "one sentence and suggest what they could check (e.g. a missing API key, a typo "
         "in dates). Only retry if the user changes the inputs.",
         "",
-        "Tools that WRITE to external services (creating calendar events, etc.) require "
-        "the user's explicit confirmation BEFORE the first write in a conversation. "
-        "Restate the intended action in plain English (title, date, place) and wait "
-        "for a yes/ok/go-ahead. After the user has confirmed once for a category, you "
-        "may continue making related writes in the same flow without re-asking.",
+        "Search and read tools never need confirmation — call them directly. "
+        "These include: get_weather, search_flights, get_flight_details, search_hotels, "
+        "search_places, get_place_details, get_directions, compute_distance_matrix, "
+        "search_email, get_email, check_availability, list_upcoming_trips_on_calendar, "
+        "recall_memories, get_preferences, get_plan. Do NOT ask the user to confirm "
+        "before running any of these — just call them.",
+        "",
+        "ONLY tools that write to external services need confirmation: create_calendar_event "
+        "is the only one. For that, restate the intended action in plain English (title, date, "
+        "place) and wait for a yes/ok/go-ahead. After the user has confirmed once in a "
+        "conversation, do NOT re-ask — just call it. If the user has already said yes/go-ahead, "
+        "you must NOT print the arguments again; call the tool instead.",
         "",
         "MULTI-DAY TRIP PLANNING. When the user asks for a trip that spans multiple days "
         "(itineraries, vacation plans, weekend getaways), follow this flow:\n"

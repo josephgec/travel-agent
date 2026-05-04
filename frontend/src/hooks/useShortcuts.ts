@@ -14,18 +14,27 @@ export function useShortcuts() {
   const setConversation = useChat((s) => s.setConversation);
 
   useEffect(() => {
+    // Guard against double-invocation: held keys (e.repeat), and the brief window
+    // before our async createConversation resolves where another keydown could fire.
+    let inFlight = false;
+
     const handler = async (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey;
       if (!meta) return;
+      if (e.repeat) return; // ignore auto-repeating keys
 
       if (e.key === "k" || e.key === "K") {
         e.preventDefault();
+        if (inFlight) return;
+        inFlight = true;
         try {
           const conv = await createConversation();
           setConversation(conv.id);
           navigate("/");
         } catch {
           // ignore
+        } finally {
+          inFlight = false;
         }
       } else if (e.key === "/") {
         e.preventDefault();

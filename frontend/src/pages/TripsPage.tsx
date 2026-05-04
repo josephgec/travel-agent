@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { BedDouble, Car, Plane, RefreshCw, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
+import { D_DISPLAY, D_MONO, D_PAL, D_SERIF } from "../design/postcard/tokens";
+import { Banner, Button, EmptyState, PageHeader, PostcardPage } from "../design/postcard/primitives";
 import { type Trip, deleteTrip, listTrips, triggerTripScan } from "../lib/api";
 
 const KIND_ICON: Record<Trip["kind"], ReactNode> = {
@@ -20,7 +22,6 @@ export function TripsPage() {
   const scanMut = useMutation({
     mutationFn: triggerTripScan,
     onSuccess: () => {
-      // Polling once after a few seconds gives the worker time to insert rows.
       setTimeout(() => qc.invalidateQueries({ queryKey: ["trips"] }), 3000);
     },
   });
@@ -30,80 +31,112 @@ export function TripsPage() {
   });
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 max-w-4xl">
-      <header className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Trips</h2>
-          <p className="text-sm text-neutral-400">
-            Auto-extracted from your Gmail. Connect Google in Settings, then scan to populate.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => scanMut.mutate()}
-          disabled={scanMut.isPending}
-          className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-1.5 text-xs hover:bg-neutral-800 disabled:opacity-50"
-        >
-          <RefreshCw size={12} className={scanMut.isPending ? "animate-spin" : ""} />
-          {scanMut.isPending ? "Scanning…" : "Scan Gmail now"}
-        </button>
-      </header>
+    <PostcardPage>
+      <PageHeader
+        eyebrow="from your inbox —"
+        title="Trips"
+        subtitle="Auto-extracted from Gmail. Connect Google in Settings, then scan to populate."
+        rightSlot={
+          <Button
+            variant="secondary"
+            onClick={() => scanMut.mutate()}
+            disabled={scanMut.isPending}
+          >
+            <RefreshCw size={12} className={scanMut.isPending ? "animate-spin" : ""} />
+            {scanMut.isPending ? "Scanning…" : "Scan Gmail now"}
+          </Button>
+        }
+      />
 
       {scanMut.isSuccess && (
-        <div className="text-xs text-emerald-400 bg-emerald-950/30 border border-emerald-900 rounded px-3 py-2">
-          Scan queued. New trips appear here once extraction finishes.
+        <div style={{ marginBottom: 14 }}>
+          <Banner tone="success">Scan queued. New trips appear here once extraction finishes.</Banner>
         </div>
       )}
 
       {isLoading ? (
-        <div className="text-sm text-neutral-500">Loading…</div>
+        <div style={{ fontFamily: D_SERIF, fontStyle: "italic", color: D_PAL.muted }}>Loading…</div>
       ) : trips.length === 0 ? (
-        <div className="rounded-md border border-neutral-800 px-4 py-8 text-center text-sm text-neutral-500">
-          No trips yet. Try "Scan Gmail now" if you've connected your Google account.
-        </div>
+        <EmptyState
+          title="no trips yet"
+          hint='Try "Scan Gmail now" if you have travel confirmations there.'
+        />
       ) : (
-        <ul className="space-y-2">
+        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
           {trips.map((t) => (
-            <li
-              key={t.id}
-              className="rounded-md border border-neutral-800 px-4 py-3 flex items-start gap-3"
-            >
-              <span className="mt-0.5 text-neutral-400">{KIND_ICON[t.kind] ?? KIND_ICON.other}</span>
-              <div className="flex-1 space-y-1">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-neutral-100 font-medium">{t.title ?? "Untitled trip"}</span>
-                  <span className="text-xs text-neutral-500 font-mono uppercase">{t.kind}</span>
-                </div>
-                <div className="text-xs text-neutral-400 flex flex-wrap gap-3">
-                  {t.origin && t.destination && (
-                    <span>
-                      {t.origin} → {t.destination}
-                    </span>
-                  )}
-                  {t.departure_date && <span>{fmtDate(t.departure_date)}</span>}
-                  {t.return_date && <span>↩ {fmtDate(t.return_date)}</span>}
-                  {t.confirmation_numbers.length > 0 && (
-                    <span className="font-mono">
-                      conf: {(t.confirmation_numbers as string[]).join(", ")}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (confirm("Delete this trip record?")) deleteMut.mutate(t.id);
+            <li key={t.id}>
+              <div
+                style={{
+                  background: D_PAL.paper,
+                  border: `0.5px solid ${D_PAL.rule}`,
+                  boxShadow: `2px 2px 0 ${D_PAL.ruleSoft}`,
+                  padding: "14px 16px",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 12,
                 }}
-                aria-label="Delete trip"
-                className="text-neutral-500 hover:text-rose-400"
               >
-                <Trash2 size={14} />
-              </button>
+                <span style={{ color: D_PAL.accent, marginTop: 2 }}>{KIND_ICON[t.kind] ?? KIND_ICON.other}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontFamily: D_DISPLAY, fontSize: 16, fontWeight: 600, letterSpacing: -0.3 }}>
+                      {t.title ?? "Untitled trip"}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: D_MONO,
+                        fontSize: 9,
+                        color: D_PAL.muted,
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
+                      }}
+                    >
+                      {t.kind}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      display: "flex",
+                      gap: 14,
+                      flexWrap: "wrap",
+                      fontFamily: D_SERIF,
+                      fontStyle: "italic",
+                      fontSize: 13,
+                      color: D_PAL.ink2,
+                    }}
+                  >
+                    {t.origin && t.destination && (
+                      <span>
+                        {t.origin} → {t.destination}
+                      </span>
+                    )}
+                    {t.departure_date && <span>{fmtDate(t.departure_date)}</span>}
+                    {t.return_date && <span>↩ {fmtDate(t.return_date)}</span>}
+                    {t.confirmation_numbers.length > 0 && (
+                      <span style={{ fontFamily: D_MONO, fontSize: 11 }}>
+                        <span style={{ color: D_PAL.muted, marginRight: 4 }}>CONF</span>
+                        {(t.confirmation_numbers as string[]).join(", ")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm("Delete this trip record?")) deleteMut.mutate(t.id);
+                  }}
+                  aria-label="Delete trip"
+                  style={{ background: "transparent", border: "none", color: D_PAL.muted, cursor: "pointer" }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </li>
           ))}
         </ul>
       )}
-    </div>
+    </PostcardPage>
   );
 }
 
